@@ -44,10 +44,10 @@ where
     }
 }
 
-impl<T, MsgT: Msg<T> + Clone, CtrlMsgT, CtrlMsgAT: Default> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
+impl<T, MsgT, CtrlMsgT, CtrlMsgAT: Default> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
 where
     T: Copy + Eq + Debug + std::hash::Hash,
-    MsgT: Clone,
+    MsgT: Msg<T> + Clone + DampableMsg, // 添加 DampableMsg
 {
     pub fn get_result(
         &self,
@@ -63,11 +63,10 @@ where
     }
 }
 
-impl<T, MsgT, CtrlMsgT, CtrlMsgAT> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
+impl<T, MsgT, CtrlMsgT, CtrlMsgAT: Default> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
 where
-    T: Clone + Send + Sync + Debug,
-    MsgT: Msg<T> + Clone + DampableMsg + Send + Sync,
-    CtrlMsgAT: Default,
+    T: Send + Sync + Debug + Clone, // 添加 Clone
+    MsgT: Msg<T> + Send + Sync + Clone + DampableMsg, // 添加 Clone + DampableMsg
 {
     //msgs: [(from, [(to, msg)])]
     fn send_threaded(
@@ -340,10 +339,10 @@ where
     }
 }
 
-impl<T, MsgT: Msg<T>, CtrlMsgT, CtrlMsgAT: Default> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
+impl<T, MsgT, CtrlMsgT, CtrlMsgAT: Default> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
 where
     T: Clone + Debug,
-    MsgT: Clone,
+    MsgT: Msg<T> + Clone + DampableMsg, // 添加 DampableMsg
 {
     pub fn get_inbox(&self, node_index: NodeIndex) -> BPResult<Vec<(NodeIndex, MsgT)>> {
         let node = self.get_node(node_index)?;
@@ -351,11 +350,10 @@ where
     }
 }
 
-impl<T, MsgT, CtrlMsgT, CtrlMsgAT> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
+impl<T, MsgT, CtrlMsgT, CtrlMsgAT: Default> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
 where
-    T: Clone + Send + Sync + Debug,
-    MsgT: Msg<T> + Clone + DampableMsg + Send + Sync,
-    CtrlMsgAT: Default,
+    T: Debug + Clone, // 添加 Clone
+    MsgT: Msg<T> + Clone + DampableMsg, // 添加 Clone + DampableMsg
 {
     pub fn new() -> Self {
         BPGraph {
