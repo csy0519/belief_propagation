@@ -63,10 +63,11 @@ where
     }
 }
 
-impl<T, MsgT: Msg<T>, CtrlMsgT, CtrlMsgAT: Default> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
+impl<T, MsgT, CtrlMsgT, CtrlMsgAT> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
 where
-    T: Send + Sync + Debug,
-    MsgT: Send + Sync,
+    T: Clone + Send + Sync + Debug,
+    MsgT: Msg<T> + Clone + DampableMsg + Send + Sync,
+    CtrlMsgAT: Default,
 {
     //msgs: [(from, [(to, msg)])]
     fn send_threaded(
@@ -352,8 +353,8 @@ where
 
 impl<T, MsgT, CtrlMsgT, CtrlMsgAT> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
 where
-    T: Clone + Debug,
-    MsgT: Msg<T> + Clone + DampableMsg,
+    T: Clone + Send + Sync + Debug,
+    MsgT: Msg<T> + Clone + DampableMsg + Send + Sync,
     CtrlMsgAT: Default,
 {
     pub fn new() -> Self {
