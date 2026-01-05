@@ -6,6 +6,7 @@ use std::default::Default;
 use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
 use std::thread;
+use crate::DampableMsg; // bpgraph.rs 顶部加 ---damping
 
 use crate::{BPError, BPResult, Msg, Node, NodeFunction, Probability};
 
@@ -19,6 +20,8 @@ where
     step: usize,
     normalize: bool,
     check_validity: bool,
+    damping_alpha: f64, // default = 1.0 (off) ---damping
+
 }
 
 impl<T, MsgT: Msg<T>, CtrlMsgT, CtrlMsgAT: Default> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
@@ -70,6 +73,7 @@ where
         msgs: Vec<(NodeIndex, Vec<(NodeIndex, MsgT)>)>,
         thread_count: u32,
     ) -> BPResult<()> {
+        let damping_alpha = self.damping_alpha; //----damping
         let normalize = self.normalize;
         let check_validity = self.check_validity;
         let step = self.step;
@@ -128,6 +132,29 @@ where
                         for (from, mut msgmap) in chunck.into_iter() {
                             for (to, mut msg) in msgmap.into_iter() {
                                 debug_print!("Sending from {} to {}", from, to);
+                                let mut nto = nodes[to].lock().expect("Locking node failed");
+                                if !nto.get_connections().contains(&from) {
+                                    return Err(BPError::new(
+                                        "BPGraph::send".to_owned(),
+                                        format!(
+                                            "Trying to send a message along a non-existent edge ({} -> {}).",
+                                            from, to
+                                        ),
+                                    )
+                                    .attach_debug_object("step", step)
+                                    .attach_debug_object("edges", nto.get_connections())
+                                    .attach_debug_object("name of node to sending to", nto.get_name()));
+                                }
+                                    // 取 old message（上一轮 from->to），---damping
+                                    if damping_alpha < 1.0 {
+                                        if let Some((_, old_msg)) = nto
+                                            .clone_inbox()
+                                            .into_iter()
+                                            .find(|(src, _)| *src == from)
+                                        {
+                                            msg.damp_inplace(&old_msg, damping_alpha);
+                                        }
+                                    }
                                 {
                                     if check_validity && !msg.is_valid() {
                                         return Err(BPError::new(
@@ -147,19 +174,6 @@ where
                                             .attach_debug_object("step", step)
                                         })?;
                                     }
-                                }
-                                let mut nto = nodes[to].lock().expect("Locking node failed");
-                                if !nto.get_connections().contains(&from) {
-                                    return Err(BPError::new(
-                                        "BPGraph::send".to_owned(),
-                                        format!(
-                                            "Trying to send a message along a non-existent edge ({} -> {}).",
-                                            from, to
-                                        ),
-                                    )
-                                    .attach_debug_object("step", step)
-                                    .attach_debug_object("edges", nto.get_connections())
-                                    .attach_debug_object("name of node to sending to", nto.get_name()));
                                 }
                                 nto.send_post(from, msg);
                             }
@@ -345,9 +359,15 @@ where
             step: 0,
             normalize: true,
             check_validity: false,
+            damping_alpha: 1.0, //---damping
+
         }
     }
+    //---damping
+    pub fn set_damping(&mut self, alpha: f64) {
+    self.damping_alpha = alpha;}
 
+    
     pub fn set_normalize(&mut self, normalize: bool) {
         self.normalize = normalize;
     }
@@ -461,6 +481,7 @@ where
         let normalize = self.normalize;
         let check_validity = self.check_validity;
         let step = self.step;
+        let damping_alpha = self.damping_alpha; // ----damping
         for (from, mut msgmap) in msgs.into_iter() {
             for (to, mut msg) in msgmap.into_iter() {
                 debug_print!("Sending from {} to {}", from, to);
@@ -476,6 +497,16 @@ where
                     .attach_debug_object("step", step)
                     .attach_debug_object("edges", nto.get_connections())
                     .attach_debug_object("name of node to sending to", nto.get_name()));
+                }
+                //---damping
+                if damping_alpha < 1.0 {
+                    if let Some((_, old_msg)) = nto
+                        .clone_inbox()
+                        .into_iter()
+                        .find(|(src, _)| *src == from)
+                    {
+                        msg.damp_inplace(&old_msg, damping_alpha);
+                    }
                 }
                 if normalize {
                     msg.normalize().map_err(|e| {

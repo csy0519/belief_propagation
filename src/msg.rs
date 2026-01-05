@@ -2,6 +2,12 @@ use crate::{BPError, BPResult, Probability};
 use std::collections::HashMap;
 use std::fmt::Debug;
 
+//------damping
+pub trait DampableMsg: Clone {
+    /// self <- (1-alpha)*old + alpha*self
+    fn damp_inplace(&mut self, old: &Self, alpha: f64);
+}
+
 //TODO: Relax restrictions?
 //Disadvantage: Not always needed
 //Advantage: Does it really make sense to have a non iterable message? It could lead to confusing problems?

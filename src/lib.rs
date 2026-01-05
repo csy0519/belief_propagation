@@ -18,6 +18,9 @@ pub use node_function::NodeFunction;
 pub use types::Probability;
 pub use variable_node::VariableNode;
 
+//----damping
+pub use crate::msg::DampableMsg;
+
 //TODO: Add tests
 #[cfg(test)]
 mod tests {
