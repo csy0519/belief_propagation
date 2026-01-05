@@ -24,10 +24,11 @@ where
 
 }
 
-impl<T, MsgT: Msg<T>, CtrlMsgT, CtrlMsgAT: Default> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
+impl<T, MsgT, CtrlMsgT, CtrlMsgAT> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
 where
-    T: Debug,
-    MsgT: Clone,
+    T: Clone + Debug,
+    MsgT: Msg<T> + Clone + DampableMsg,
+    CtrlMsgAT: Default,
 {
     pub fn initialize_node_constant_msg(
         &mut self,
@@ -349,9 +350,11 @@ where
     }
 }
 
-impl<T, MsgT: Msg<T>, CtrlMsgT, CtrlMsgAT: Default> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
+impl<T, MsgT, CtrlMsgT, CtrlMsgAT> BPGraph<T, MsgT, CtrlMsgT, CtrlMsgAT>
 where
-    T: Debug,
+    T: Clone + Debug,
+    MsgT: Msg<T> + Clone + DampableMsg,
+    CtrlMsgAT: Default,
 {
     pub fn new() -> Self {
         BPGraph {
